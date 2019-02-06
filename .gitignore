@@ -1,0 +1,12 @@
+/PA0/a.out
+/PA0/*.PNG
+/PA0/*.gdoc
+
+/PA1/*.vscode
+/PA1/a.out
+/PA1/*.gdoc
+/PA1/*.o
+/PA1/memtest
+/PA1/_htaccess
+/PA1/*.zip
+
