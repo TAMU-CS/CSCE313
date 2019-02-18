@@ -57,6 +57,14 @@ int main(int argc, char *argv[]){
     int size = *((int*)chan.cread(resultLength));
 
     char *buffer;
+    //send a request for information (person, seconds, ecg number)
+    ((filemsg *) request)->length = size;
+    ((filemsg *) request)->offset = 0;
+
+    chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
+    buffer = chan.cread(new int(1));
+    cout << *(buffer);
+    /*
     for(int i = 0; i < size; i+=100){
         //send a request for information (person, seconds, ecg number)
         ((filemsg *) request)->length = 100;
@@ -64,8 +72,9 @@ int main(int argc, char *argv[]){
 
         chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
         buffer = chan.cread(new int(1));
-        cout << *((double*)buffer);
+        cout << *(buffer);
     }
+    */
 
     delete request;
     delete fmsg;
