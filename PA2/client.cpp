@@ -27,10 +27,9 @@ int main(int argc, char *argv[]){
         datamsg *request = new datamsg(1, (double)i * 0.04, 1);
 
         chan.cwrite((char*)request, 100);
-        cout << "t" << endl;
-
         buffer = chan.cread(len);
-        cout << buffer << endl;
+        cout << (*buffer) << endl;
+        cout << i << endl;
     }
     delete len;
 
