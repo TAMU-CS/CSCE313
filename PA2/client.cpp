@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
 
         chan.cwrite((char*)request, 100);
 
-        buffer = chan.cread();
+        buffer = chan.cread(len);
         cout << "yoyoyoy" << endl;
 
         curTime += 0.04;
