@@ -30,10 +30,10 @@ int main(int argc, char *argv[]){
         chan.cwrite((char*)request, 100);
 
         buffer = chan.cread();
-        cout << (*buffer) << endl;
+        cout << "yoyoyoy" << endl;
 
         curTime += 0.04;
-        
+
     }
     delete len;
 
