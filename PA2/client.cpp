@@ -54,20 +54,22 @@ int main(int argc, char *argv[]){
     chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
 
     int * resultLength = new int(0);
-    int size = *((int*)chan.cread(resultLength);
+    int size = *((int*)chan.cread(resultLength));
+
+    char *buffer;
     for(int i = 0; i < size; i+=100){
         //send a request for information (person, seconds, ecg number)
-        request->length = 100;
-        request->offset = i;
+        filemsg *request = new filemsg(i, 100);
 
         chan.cwrite((char*)request, 100);
         buffer = chan.cread(new int(1));
         cout << *(buffer);
+        delete request;
     }
-    
+
     delete request;
     delete fmsg;
-    delete filename;
+    delete fileName;
 
 
 	return 0;
