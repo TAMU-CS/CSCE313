@@ -24,7 +24,7 @@ int main(int argc, char *argv[]){
 
     for(int i = 0; i < 15000; i++){ //15000 different times
         //send a request for information (person, seconds, ecg number)
-        datamsg *request = new datamsg(1, (double)i * 0.04, 1);
+        datamsg *request = new datamsg(1, (double)i * 0.004, 1);
 
         chan.cwrite((char*)request, 100);
         buffer = chan.cread(len);
