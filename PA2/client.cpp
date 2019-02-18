@@ -30,6 +30,9 @@ int main(int argc, char *argv[]){
         buffer = chan.cread(len);
         cout << (*buffer) << endl;
         cout << i << endl;
+
+
+        delete request;
     }
     delete len;
 
