@@ -53,10 +53,8 @@ int main(int argc, char *argv[]){
     strcpy(request + sizeof(filemsg), fileName);
     chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
 
-    int * resultLength = new int();
-    char * buffer;
-    buffer = chan.cread(resultLength);
-    cout << *((int*)buffer) << endl;
+    int * resultLength = new int(0);
+    cout << *((int*)chan.cread(resultLength)) << endl;
 
 	return 0;
 }
