@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
 
     //2. request a test File
     //get the length
-    char * fileName = "1.csv\0";
+    char * fileName = "1.csv";
     filemsg *fmsg = new filemsg(50, 28);
     
     char * request = new char[sizeof(filemsg) + sizeof(char) * 5 + 1];
