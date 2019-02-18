@@ -25,12 +25,14 @@ int main(int argc, char *argv[]){
     double curTime = 0;
     for(int i = 0; i < 15000; i++){ //15000 different times
         //send a request for information (person, seconds, ecg number)
+        cout << "TESTing" << endl;
         datamsg *request = new datamsg(DATA_MSG, 60, 1);
 
         chan.cwrite((char*)request, 100);
+        cout << "TESTing" << endl;
 
         buffer = chan.cread(len);
-        cout << "yoyoyoy" << endl;
+        cout << "TESTing" << endl;
 
         curTime += 0.04;
 
