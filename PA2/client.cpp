@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
 
         chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
         buffer = chan.cread(new int(1));
-        cout << *(buffer);
+        cout << *((*double)(buffer));
     }
 
     delete request;
