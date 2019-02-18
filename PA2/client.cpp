@@ -54,7 +54,7 @@ int main(int argc, char *argv[]){
     chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
 
     int * resultLength = new int(0);
-    cout << *((int*)chan.cread(resultLength)) << endl;
+    cout << *((int*)chan.cread(new int(1))) << endl;
 
 	return 0;
 }
