@@ -25,16 +25,21 @@ int main(int argc, char *argv[]){
     for(int i = 0; i < 15000; i++){ //15000 different times
         //send a request for information (person, seconds, ecg number)
         datamsg *request = new datamsg(1, (double)i * 0.004, 1);
+        person1output << (double)i * 0.004 << ",";
 
         chan.cwrite((char*)request, 100);
         buffer = chan.cread(len);
-        cout << *((double*)buffer) << endl;
-        cout << i << endl;
+        person1output << *((double*)buffer) << ",";
 
+        *request = datamsg(1, (double)i * 0.004, 2);
+        chan.cwrite((char*)request, 100);
+        buffer = chan.cread(len);
+        person1output << *((double*)buffer) << endl;
 
         delete request;
     }
     delete len;
+    person1output.close();
 
 	return 0;
 }
