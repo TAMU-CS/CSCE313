@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     srand(time_t(NULL));
     FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
 
-    //requesting data points for person 1
+    /*1. requesting data points for person 1
     //create output file
     ofstream person1output("x1.csv");
     int *len = new int(100);
@@ -40,6 +40,23 @@ int main(int argc, char *argv[]){
     }
     delete len;
     person1output.close();
+    */
+
+    //2. request a test File
+    //get the length
+    char * fileName = "1.csv\0";
+    filemsg *fmsg = new filemsg(50, 28);
+    
+    char * request = new char[sizeof(filemsg) + sizeof(char) * 5 + 1];
+    *((filemsg *) request) = *fmsg;
+
+    strcpy(request + sizeof(filemsg), fileName);
+    chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
+
+    int * resultLength = new int();
+    char * buffer;
+    buffer = chan.cread(resultLength);
+    cout << *((int*)buffer) << endl;
 
 	return 0;
 }
