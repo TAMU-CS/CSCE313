@@ -64,6 +64,7 @@ int main(int argc, char *argv[]){
         buffer = chan.cread(new int(1));
         cout << *(buffer);
     }
+    
     delete request;
     delete fmsg;
     delete filename;
