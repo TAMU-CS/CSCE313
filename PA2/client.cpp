@@ -33,6 +33,7 @@ int main(int argc, char *argv[]){
         cout << (*buffer) << endl;
 
         curTime += 0.04;
+        
     }
     delete len;
 
