@@ -59,12 +59,12 @@ int main(int argc, char *argv[]){
     char *buffer;
     for(int i = 0; i < size; i+=100){
         //send a request for information (person, seconds, ecg number)
-        filemsg *request = new filemsg(i, 100);
+        ((filemsg *) request)->length = 100;
+        ((filemsg *) request)->offset = i;
 
-        chan.cwrite((char*)request, 100);
+        chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
         buffer = chan.cread(new int(1));
         cout << *(buffer);
-        delete request;
     }
 
     delete request;
