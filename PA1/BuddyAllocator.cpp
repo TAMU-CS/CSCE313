@@ -139,7 +139,7 @@ BuddyAllocator::BuddyAllocator(int _basic_block_size, int _total_memory_length)
 	//set the linked list
 	Mem[Mem.size() - 1].insert(first);
 
-	getBuddy(first);
+	//getBuddy(first);
 }
 
 BuddyAllocator::~BuddyAllocator()
