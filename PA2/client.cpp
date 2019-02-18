@@ -56,30 +56,31 @@ int main(int argc, char *argv[]){
     int * resultLength = new int(0);
     int size = *((int*)chan.cread(resultLength));
 
-    char *buffer;
     //send a request for information (person, seconds, ecg number)
-    ((filemsg *) request)->length = size;
+    ((filemsg *) request)->length = 100;
     ((filemsg *) request)->offset = 0;
 
-    chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
-    buffer = chan.cread(new int(1));
-    cout << *(buffer);
-    /*
-    for(int i = 0; i < size; i+=100){
-        //send a request for information (person, seconds, ecg number)
-        ((filemsg *) request)->length = 100;
-        ((filemsg *) request)->offset = i;
+    //file setup
+    ofstream y1output("y1.csv");
+
+    //loop and request
+    char *buffer;
+    for(int i = 100; i < size; i+= 100){
+        ((filemsg *) request)->offset = i - 100;
 
         chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
-        buffer = chan.cread(new int(1));
-        cout << *(buffer);
+        buffer = chan.cread(resultLength);
+        y1output << buffer;
     }
-    */
 
-    delete request;
-    delete fmsg;
-    delete fileName;
+    //set the request length to the ending
+    ((filemsg *) request)->length = size % 100;
+    ((filemsg *) request)->offset = size  - (size % 100);
+    chan.cwrite(request, sizeof(filemsg) + sizeof(char) * 5 + 1);
 
+    buffer = chan.cread(resultLength);
+    y1output << buffer;
+    y1output.close();
 
 	return 0;
 }
