@@ -28,7 +28,7 @@ int main(int argc, char *argv[]){
 
         chan.cwrite((char*)request, 100);
         buffer = chan.cread(len);
-        cout << (*buffer) << endl;
+        cout << *((double*)buffer) << endl;
         cout << i << endl;
 
 
