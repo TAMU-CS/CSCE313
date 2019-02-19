@@ -168,6 +168,16 @@ int main(int argc, char *argv[]){
 
 	/*5.Run server as child process and then send quit msg
 	*/
+	int cid = fork(); //create child process
+
+	if(cid){ //parent process
+		
+	}else{ //child process
+		char * argv[] = {"./dataserver"};
+		execvp("./dataserver", argv);
+		sleep(10);
+		
+	}
 
 	sleep(10); //sleep for 10 seconds
 
