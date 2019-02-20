@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <signal.h>
+#include <chrono> //for high resolution time measurement
 
 #include <sys/time.h>
 #include <cassert>
