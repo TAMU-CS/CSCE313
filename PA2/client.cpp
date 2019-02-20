@@ -1,8 +1,8 @@
 /*
-    Tanzir Ahmed
+    Kevin Tang
     Department of Computer Science & Engineering
     Texas A&M University
-    Date  : 2/8/19
+    Date  : 2/19/19
  */
 #include "common.h"
 #include "FIFOreqchannel.h"
