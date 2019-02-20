@@ -36,6 +36,7 @@ int main(int argc, char *argv[]){
 		char * arglist[2] = {"./dataserver"};
         arglist[1] = nullptr;
 		execvp(arglist[0], arglist);
+        delete []arglist;
 
         return 0; //return at end of child process
 	}
@@ -49,19 +50,30 @@ int main(int argc, char *argv[]){
     FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
 
     //run tests, measure time for test 1 and test 2
-    auto start = chrono::high_resolution_clock::now();
-    test1(chan);
-    auto stop = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now(); 
+    auto stop = chrono::high_resolution_clock::now(); 
     auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
-    cout << "TEST1 took: " << duration.count() << " musec" << endl;
 
+    
+    start = chrono::high_resolution_clock::now();
+    test1(chan);
+    stop = chrono::high_resolution_clock::now();
+    duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+    cout << "TEST1 (data request) took: " << duration.count() << " musec" << endl;
+    
     start = chrono::high_resolution_clock::now();
     test2(chan);
     stop = chrono::high_resolution_clock::now();
     duration = chrono::duration_cast<chrono::microseconds>(stop - start);
-    cout << "TEST2 took: " << duration.count() << " musec" << endl;
+    cout << "TEST2 (file request) took: " << duration.count() << " musec" << endl;
+    
 
+    start = chrono::high_resolution_clock::now();
     test3(chan);
+    stop = chrono::high_resolution_clock::now();
+    duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+    cout << "TEST3 (binary transfer) took: " << duration.count() << " musec" << endl;
+
     test4(chan);
 
     //quit the server
@@ -148,6 +160,10 @@ void test2(FIFORequestChannel &chan){
     y1output << buffer;
     y1output.close();
 
+    delete request;
+    delete resultLength;
+    delete buffer;
+
 }
 
 void test3(FIFORequestChannel &chan){
@@ -198,8 +214,14 @@ void test3(FIFORequestChannel &chan){
 		fseek (y1output, ((filemsg *) request)->offset, SEEK_SET);
 		fwrite (buffer, 1, size % 100, y1output);
 	}
- 
+
     fclose(y1output);
+
+    delete fmsg;
+    delete request;
+    delete resultLength;
+    delete y1output;
+
 }
 
 void test4(FIFORequestChannel &chan){
@@ -233,5 +255,9 @@ void test4(FIFORequestChannel &chan){
     person1output << *((double*)buffer) << endl;
 
     delete len;
+    delete size;
+    delete requestedChannel;
+    delete buffer;
+    delete request;
     person1output.close();
 }
