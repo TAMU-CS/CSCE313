@@ -1,0 +1,4 @@
+  PID TTY          TIME CMD
+ 5509 tty3     00:00:00 bash
+ 5621 tty3     00:00:00 shell
+ 5623 tty3     00:00:00 ps

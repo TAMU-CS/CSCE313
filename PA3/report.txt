@@ -1,0 +1,16 @@
+Report- Kevin Tang CSCE 313
+This program simulates a linux shell. 
+
+For parsing, I tokenized each part by iterating and deleting out whitespaces unless inside quotations.
+I also split up any tokens with "<,|,>" key characters in them unless they were in quotes. After the preprocessing, it was easy to 
+divide commands into sets.
+
+Piping was done using dup2 to connect two difference processes together. I kept track of one fds
+pipe and after executing one command, I changed the output to one end of the pipe, and the input to
+the parent program. This was done iteratively to handle pipes generically.
+
+Redirection was done with standard filestreams and output was printed into the output files specified. Input files had their contents
+added to a pipe to be read by another process.
+
+For keeping track of background jobs, I was added to a hash map everytime a job was created and I would update the job listing before a command
+was run. The update used the ps command, and I checked to make sure the pid's were in the ps command otherwise I would remove from the jobs list.

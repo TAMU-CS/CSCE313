@@ -1,0 +1,6 @@
+-rwxrwxrwx 1 kevin kevin    63 Mar  8 23:27 input.txt
+-rwxrwxrwx 1 kevin kevin    28 Mar  8 16:48 output1.txt
+-rwxrwxrwx 1 kevin kevin     0 Mar 10 15:09 output.txt
+-rwxrwxrwx 1 kevin kevin   593 Mar  8 23:36 report.txt
+-rwxrwxrwx 1 kevin kevin   323 Mar  7 23:24 table1.txt
+-rwxrwxrwx 1 kevin kevin     0 Mar 10 15:04 test.txt

@@ -1,30 +1,79 @@
 #include <iostream>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <regex>
+#include <fstream>
 using namespace std;
 
 int main(){
-	string input;
-	getline(cin, input);
 
-	//tokenize the string , get vector of strings
-	regex r(R"([\s]+)"); //tokenize by space
-	regex_token_iterator<string::iterator> rit(input.begin(), input.end(), r, -1); //split using regex iterator
-	regex_token_iterator<string::iterator> rend;
-	vector<string> tokens(rit, rend);
+	int fds[2];
+	int fds2[2];
+	pipe(fds);
+	pipe(fds2);
 
-	//convert vector of strings to c string array
-	char *nargs[tokens.size()];
-	for(int i = 0; i < tokens.size(); i++){
-		nargs[i] = (char*)tokens[i].c_str();
+    int stdout = dup(1);
+    int stdin = dup(0);	
+	// dup2(fds[1], 1);
+	// dup2(fds[0], 0);
+
+	// implementing ls -ls>foo.txt
+	// int fd = open("output.txt", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	// dup2(fd, 1); //overwrites stdout with new file
+	// execlp("ls", "ls", "-l", "-a", nullptr);
+
+	// implementing grep .txt < foo.txt
+	// int fd = open("output.txt", O_RDONLY);
+	// dup2(fd, 0);
+	// execlp("grep", "grep", ".txt", nullptr);
+
+	// testing printing out with pipes
+	//int fd = dup(1);
+	//write(fd, "TEST", 5);
+
+	// shell piping
+	int pid = fork();
+	if(!pid){
+		dup2(fds[1], 1);
+		close(fds[1]);
+		close(fds[0]);
+		execlp("ls", "ls", "-l", NULL);
 	}
-	nargs[tokens.size()] = nullptr;
 
-	//call exec
-	execvp(tokens[0].c_str(), nargs);
+	wait(NULL);
 
-	cout << "ERROR: execvp failed!" << endl;
+	cout << "ls done..." << endl;
+	pid = fork();
+
+	if(!pid){
+		cout << "child: " << getpid() << endl;
+		dup2(fds[0], 0);
+		dup2(fds2[1], 1);
+		close(fds[0]);
+		close(fds[1]);
+		close(fds2[1]);
+		execlp("./testFunc", "./testFunc", NULL);
+	}else{
+		cout << "wait for child begin..." << pid << endl;
+		close(fds[0]);
+		close(fds[1]);
+		waitpid(pid, NULL, WUNTRACED);
+		cout << "wait for child end." << endl;
+
+		//char buffer[100];
+		//read(fds2[0], buffer, 100);
+		//cout << buffer << endl;
+
+		dup2(fds2[0], 0);
+		close(fds2[1]);
+		close(fds2[0]);
+		string temp;
+		while(getline(cin , temp)){
+			cout << temp << endl;
+		}
+	}
+
 	return 0;
 }
