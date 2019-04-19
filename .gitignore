@@ -1,9 +1,12 @@
 CSCE313.pem
+.vscode
+
 /PA0/a.out
 /PA0/*.PNG
 /PA0/*.gdoc
 
 /PA1/*.vscode
+/PA1/.vscode/*
 /PA1/a.out
 /PA1/*.gdoc
 /PA1/*.o
@@ -11,4 +14,8 @@ CSCE313.pem
 /PA1/_htaccess
 /PA1/*.zip
 
-.vscode
+/PA2/*.vscode
+/PA2/.vscode/*
+
+/PA3/*.vscode
+/PA3/.vscode/*
