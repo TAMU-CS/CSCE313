@@ -18,6 +18,7 @@ public:
 class worker_thread_args{
 public:
    /*put all the arguments for the wroker threads */
+   
 };
 
 void * patient_thread_function(void *arg)

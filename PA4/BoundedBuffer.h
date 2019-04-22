@@ -11,8 +11,11 @@ using namespace std;
 class BoundedBuffer
 {
 private:
-  int cap;
+	int cap;
+	queue<vector<char> > q;
 
+	//2 synchronization primitives: a mutex and two condition variables
+	pthread_mutex_t mut;
 public:
 	BoundedBuffer(int _cap){
 
