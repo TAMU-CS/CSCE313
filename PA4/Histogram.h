@@ -13,6 +13,9 @@ private:
 	vector<int> hist;
 	int nbins;
 	double start, end;
+
+	//standard mutex to lock and unlock histogram
+	pthread_mutex_t mut;
 public:
     Histogram(int, double, double);
 	~Histogram();

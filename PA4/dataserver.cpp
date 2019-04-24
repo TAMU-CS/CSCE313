@@ -153,7 +153,7 @@ void *handle_process_loop(void *_channel)
 int main(int argc, char *argv[])
 {
 	srand(time_t(NULL));
-	bufsize = stoi(argv[0]); //MAX_MESSAGE; // modify this to accept bufsize m from the client side
+	bufsize = stoi(argv[1]); //MAX_MESSAGE; // modify this to accept bufsize m from the client side
 	
 	for (int i=0; i<NUM_PERSONS; i++){
 		populate_file_data(i+1);

@@ -19,3 +19,4 @@ dataserver: dataserver.cpp  FIFOreqchannel.o common.o
 
 clean:
 	rm -rf *.o fifo* dataserver client 
+

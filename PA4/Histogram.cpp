@@ -8,10 +8,18 @@ using namespace std;
 Histogram::Histogram(int _nbins, double _start, double _end): nbins (_nbins), start(_start), end(_end){
 	//memset (hist, 0, nbins * sizeof (int));	
 	hist = vector<int> (nbins, 0);
+
+	//create mutex
+	pthread_mutex_init(&mut, NULL);
 }
 Histogram::~Histogram(){
+	pthread_mutex_destroy(&mut);
 }
 void Histogram::update (double value){
+
+	//lock to keep histogram safe
+	pthread_mutex_lock(&mut);
+
 	int bin_index = (int) ((value - start) / (end - start) * nbins);
 	if (bin_index <0)
 		bin_index= 0;
@@ -20,6 +28,9 @@ void Histogram::update (double value){
 
 	//cout << value << "-" << bin_index << endl;
 	hist [bin_index] ++;
+
+	pthread_mutex_unlock(&mut); //unlock to release access
+
 }
 vector<int> Histogram::get_hist(){
 	return hist;
