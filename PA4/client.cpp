@@ -7,6 +7,7 @@
 #include "FIFOreqchannel.h"
 using namespace std;
 
+//requesting data points
 class patient_thread_args{
 public:
 	//patient thread arguments
@@ -103,8 +104,119 @@ void *worker_thread_function(void *arg)
 	}
 }
 
+//requesting files
+class file_threads_args{
+	public:
+	BoundedBuffer *B;
+	FIFORequestChannel *chan;
+	char * fileName;
+	int m;
+};
+
+class file_worker_args{
+	public:
+	BoundedBuffer *B;
+	FIFORequestChannel *chan;
+	//output file
+	char *fileName;
+};
+
+void *file_threads_func(void *arg){
+	//get arguments
+	file_threads_args *ta = (file_threads_args*) arg;
+	int m = ta->m;
+	FIFORequestChannel *chan = ta->chan;
+	char *fileName = "mybin";
+	BoundedBuffer *B = ta->B;
+
+	//get file size
+	filemsg *fmsg = new filemsg(0, 0);
+	int requestSize = sizeof(filemsg) + sizeof(char) * 5 + 1;
+    
+    char * request = new char[requestSize];
+    *((filemsg *) request) = *fmsg;
+
+    strcpy(request + sizeof(filemsg), fileName);
+    chan->cwrite(request, requestSize);
+
+    int * resultLength = new int(0);
+    int size = *((int*)chan->cread(resultLength));
+
+    //send a request for information (person, seconds, ecg number)
+    ((filemsg *) request)->length = m;
+    ((filemsg *) request)->offset = 0;
+
+    //loop and request
+    char *buffer;
+    for(int i = m; i < size; i+= m){
+        ((filemsg *) request)->offset = i - m;
+
+        //write to bounded buffer
+		B->push(request, requestSize);
+    }
+
+	if(size % m != 0){
+
+		//set the request length to the ending
+		((filemsg *) request)->length = size % m;
+		((filemsg *) request)->offset = size  - (size % m);
+	
+        //write to bounded buffer
+		B->push(request, requestSize);
+	}
+}
+
+void *file_worker_func(void *arg){
+	//worker thread performs four tasks:
+	//1. reads a datamsg from request buffer
+	//2. sends it to a server over a data channel
+	//3. receives the response from server through a data channel
+	//4. puts the response in the patient's histogram
+
+	//get arguments
+	file_worker_args *ta = (file_worker_args *) arg;
+	FIFORequestChannel *chan = ta->chan;
+	char *fileName = "mybin";//ta->fileName;
+
+	int *len = new int(100);
+	char *buffer = new char(100);
+	int requestSize = sizeof(filemsg) + sizeof(char) * 5 + 1;
+    int * resultLength = new int(0);
+    char * request = new char[requestSize];
+
+    //file setup
+	FILE* y1output = fopen ("BinCpyOutput", "wb");
+
+	//pop arguments from request buffer
+	while(true){
+ 
+		//pop off request and process
+		vector<char> vReq = ta->B->pop();
+	
+		//person and seconds and get reqDMsg conversion
+		request = &vReq[0];
+
+		//check if quit msg, then stop thread
+		if(((datamsg*)request)->mtype == QUIT_MSG){
+			//close channel
+			cout << "close channel" << endl;
+   	 		chan->cwrite ((char*)request, sizeof (datamsg));
+			break;
+		}
+
+        chan->cwrite(request, requestSize);
+        buffer = chan->cread(resultLength);
+
+		fseek (y1output, ((filemsg *) request)->offset, SEEK_SET);
+		fwrite (buffer, 1, ((filemsg *) request)->length, y1output);
+	}
+}
+
+
 //function prototypes
 bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, int argc, char **argv);
+void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc);
+void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuffer *request_buffer);
 
 int main(int argc, char *argv[])
 {
@@ -124,6 +236,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+	//determing if filemode
+	bool datamode = f == "";
+
     int pid = fork();
     if (pid == 0){
 		// modify this to pass along m
@@ -137,16 +252,41 @@ int main(int argc, char *argv[])
 	FIFORequestChannel* chan = new FIFORequestChannel("control", FIFORequestChannel::CLIENT_SIDE);
     BoundedBuffer *request_buffer = new BoundedBuffer(b);
 	HistogramCollection hc;
-		
+	
     struct timeval start, end;
     gettimeofday (&start, 0);
+
+	if(datamode){
+		dataReq(p, w, n, chan, request_buffer, hc);
+	}else{
+		char *fileName = "mybin";
+		fileReq(w, m, fileName, chan, request_buffer);
+	}
+
+    gettimeofday (&end, 0);
+
+	if(datamode) hc.print ();
+	
+    int secs = (end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)/(int) 1e6;
+    int usecs = (int)(end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)%((int) 1e6);
+    cout << "Took " << secs << " seconds and " << usecs << " micor seconds" << endl;
+
+    MESSAGE_TYPE q = QUIT_MSG;
+    chan->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
+    cout << "All Done!!!" << endl;
+    delete chan;
+    
+}
+
+void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc){
+
 
     //keep track of threads and argument lists
 	pthread_t tids[p + w];
 	vector<worker_thread_args*> workerArgs;
 	vector<patient_thread_args*> patientArgs;
 
-	//start all paitient threads
+	//start all patient threads
 	cout << "starting pthreads: " << p << endl;
 	for(int i = 0; i < p; i++){
 		cout << i << endl;
@@ -206,18 +346,68 @@ int main(int argc, char *argv[])
 	//free memory
 	for(int i = 0; i < workerArgs.size(); i++) delete workerArgs[i];
 
-    gettimeofday (&end, 0);
-	hc.print ();
-    int secs = (end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)/(int) 1e6;
-    int usecs = (int)(end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)%((int) 1e6);
-    cout << "Took " << secs << " seconds and " << usecs << " micor seconds" << endl;
-
-    MESSAGE_TYPE q = QUIT_MSG;
-    chan->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
-    cout << "All Done!!!" << endl;
-    delete chan;
-    
 }
+
+
+void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuffer *request_buffer){
+
+
+    //keep track of threads and argument lists
+	pthread_t tids[w];
+	vector<file_worker_args*> workerArgs;
+
+	//start file thread for pushing to buffer
+	pthread_t fTid;
+	file_threads_args ta;
+	ta.B = request_buffer;
+	ta.chan = chan;
+	ta.m = m;
+	ta.fileName = fileName;
+	pthread_create(&fTid, 0, file_threads_func, &ta);
+
+	//start all worker threads
+	cout << "starting wthreads: " << w << endl;
+	for(int i = 0; i < w; i++){
+		//set up communication channel
+		datamsg *request = new datamsg(1, 0, 1);
+		request->mtype = NEWCHANNEL_MSG;
+		chan->cwrite((char *) request, sizeof(datamsg));
+
+		int *size = new int();
+		char *requestedChannel = chan->cread(size);
+		FIFORequestChannel *customChannel = new FIFORequestChannel(requestedChannel, FIFORequestChannel::CLIENT_SIDE);
+		delete request;
+		delete size;
+		delete requestedChannel;
+
+		//create the thread
+		file_worker_args *wArgs = new file_worker_args();
+		wArgs->B = request_buffer;
+		wArgs->chan = customChannel;
+		wArgs->fileName = fileName;
+		pthread_create(&tids[i], 0, file_worker_func, wArgs);
+		workerArgs.push_back(wArgs);
+	}
+	cout << "file worker is done" << endl;
+	//join all the file req thread
+	pthread_join(fTid, 0);
+	cout << "request ends" << endl;
+	
+	//send stop msg to worker threads
+	for(int i = 0; i < w; i++){
+		datamsg *request = new datamsg(1, 0, 1);
+		request->mtype = QUIT_MSG;
+		request_buffer->push((char*)request, sizeof(datamsg));
+	}
+	//join all worker threads
+	for(int i = 0; i < w; i++){
+		pthread_join(tids[i], 0);
+	}
+	//free memory
+	for(int i = 0; i < workerArgs.size(); i++) delete workerArgs[i];
+
+}
+
 
 //getInput - uses getopt to parse through flags and sets proper variables to the flag
 bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, int argc, char **argv)
