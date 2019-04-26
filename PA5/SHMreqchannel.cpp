@@ -1,12 +1,12 @@
 #include "common.h"
-#include "FIFOreqchannel.h"
+#include "SHMreqchannel.h"
 using namespace std;
 
 /*--------------------------------------------------------------------------*/
 /* CONSTRUCTOR/DESTRUCTOR FOR CLASS   R e q u e s t C h a n n e l  */
 /*--------------------------------------------------------------------------*/
 
-FIFORequestChannel::FIFORequestChannel(const string _name, const Side _side, int _bs):
+SHMRequestChannel::SHMRequestChannel(const string _name, const Side _side, int _bs):
 	RequestChannel(_name, _side, _bs)
 {
 	
@@ -25,7 +25,7 @@ FIFORequestChannel::FIFORequestChannel(const string _name, const Side _side, int
 	
 }
 
-FIFORequestChannel::~FIFORequestChannel()
+SHMRequestChannel::~SHMRequestChannel()
 { 
 	close(wfd);
 	close(rfd);
@@ -34,7 +34,7 @@ FIFORequestChannel::~FIFORequestChannel()
 	remove(pipe2.c_str());
 }
 
-int FIFORequestChannel::open_pipe(string _pipe_name, int mode)
+int SHMRequestChannel::open_pipe(string _pipe_name, int mode)
 {
 	mkfifo (_pipe_name.c_str (), 0600);
 	int fd = open(_pipe_name.c_str(), mode);
@@ -44,7 +44,7 @@ int FIFORequestChannel::open_pipe(string _pipe_name, int mode)
 	return fd;
 }
 
-char* FIFORequestChannel::cread(int *len)
+char* SHMRequestChannel::cread(int *len)
 {
 	char * buf = new char [MAX_MESSAGE];
 	int length; 
@@ -54,7 +54,7 @@ char* FIFORequestChannel::cread(int *len)
 	return buf;
 }
 
-int FIFORequestChannel::cwrite(char* msg, int len)
+int SHMRequestChannel::cwrite(char* msg, int len)
 {
 	if (len > MAX_MESSAGE){
 		EXITONERROR("cwrite");

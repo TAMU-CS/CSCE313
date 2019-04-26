@@ -69,22 +69,7 @@ int main(int argc, char *argv[])
     chan->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
     cout << "All Done!!!" << endl;
     delete chan;
-    
-	//remove all of the fifo stuff
-	char *cmd = "/bin/rm";
-	char *args[w * 2 + 2];
-	args[0] = cmd;
-	args[w * 2 + 1] = NULL;
-	for(int i = 2; i < 2 * w + 2; i+=2){
-		string s = "fifo_data" + to_string(i/2);
-		string s1 = s + "_1";
-		string s2 = s + "_2";
-		args[i - 1] = strdup(s1.c_str());
-		args[i] = strdup(s2.c_str());
-	}
-	args[1] = "fifo_data1_1";
-	execvp(cmd, args);
-	cout << "clean didn't work" << endl;
+
 }
 
 void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc){

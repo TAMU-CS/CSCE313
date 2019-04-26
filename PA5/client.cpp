@@ -3,9 +3,9 @@
 #include <signal.h>
 
 //function prototypes
-bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, int argc, char **argv);
-void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc);
-void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuffer *request_buffer);
+bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, char &i, int argc, char **argv);
+void dataReq(int p, int w, int n, RequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc);
+void fileReq(int w, int m, char *fileName, RequestChannel* chan, BoundedBuffer *request_buffer);
 
 int main(int argc, char *argv[])
 {
@@ -15,11 +15,12 @@ int main(int argc, char *argv[])
     int b = 20; 	// default capacity of the request buffer, you should change this default
 	int m = MAX_MESSAGE; 	// default capacity of the file buffer
     string f;   //file string
+	Rtype = 'f'; //request channel type , default to fifo
     srand(time_t(NULL));
     
     //process input
     bool errout = false;
-    errout = getInput(n, p, w, b, m, f, argc, argv);
+    errout = getInput(n, p, w, b, m, f, Rtype, argc, argv);
     if(errout){
         cout << "Input Error!" << endl;
         return 0;
@@ -32,13 +33,25 @@ int main(int argc, char *argv[])
     if (pid == 0){
 		// modify this to pass along m
 		string s =  to_string(m);
-        execl ("./dataserver", "./dataserver", (char*)s.c_str(),(char *)NULL);
+        execl ("./dataserver", "./dataserver", (char*)s.c_str(), &Rtype,(char *)NULL);
         cout << "server failed" << endl;
 		return 0;
     }
 
 	//create control request channel
-	FIFORequestChannel* chan = new FIFORequestChannel("control", FIFORequestChannel::CLIENT_SIDE);
+	//make channel based on rtype
+	RequestChannel* chan;
+	if(Rtype == 'f'){ //fifo
+		chan = new FIFORequestChannel("control", RequestChannel::CLIENT_SIDE, m);
+	}else if(Rtype == 'q'){ //message queue
+		chan = new MQRequestChannel("control", RequestChannel::CLIENT_SIDE, m);
+	}else if(Rtype == 's'){ //shared memory
+		chan = new SHMRequestChannel("control", RequestChannel::CLIENT_SIDE, m);
+	}else{
+		cout << "Request Channel must be f,q,s!\n";
+		return 0;
+	}
+
     BoundedBuffer *request_buffer = new BoundedBuffer(b);
 	HistogramCollection hc;
 
@@ -58,7 +71,7 @@ int main(int argc, char *argv[])
     gettimeofday (&end, 0);
 
 	//clear before output
-    system("clear");
+    //system("clear");
 	if(datamode) hc.print ();
 	
     int secs = (end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)/(int) 1e6;
@@ -70,24 +83,11 @@ int main(int argc, char *argv[])
     cout << "All Done!!!" << endl;
     delete chan;
     
-	//remove all of the fifo stuff
-	char *cmd = "/bin/rm";
-	char *args[w * 2 + 2];
-	args[0] = cmd;
-	args[w * 2 + 1] = NULL;
-	for(int i = 2; i < 2 * w + 2; i+=2){
-		string s = "fifo_data" + to_string(i/2);
-		string s1 = s + "_1";
-		string s2 = s + "_2";
-		args[i - 1] = strdup(s1.c_str());
-		args[i] = strdup(s2.c_str());
-	}
-	args[1] = "fifo_data1_1";
-	execvp(cmd, args);
-	cout << "clean didn't work" << endl;
+	//cleanup
+	//not necessary, when channels are deleted they clean themselves
 }
 
-void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc){
+void dataReq(int p, int w, int n, RequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc){
 
 
     //keep track of threads and argument lists
@@ -121,7 +121,15 @@ void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *reque
 
 		int *size = new int();
 		char *requestedChannel = chan->cread(size);
-		FIFORequestChannel *customChannel = new FIFORequestChannel(requestedChannel, FIFORequestChannel::CLIENT_SIDE);
+		RequestChannel *customChannel;
+		if(Rtype == 'f'){ //fifo
+			customChannel =	new FIFORequestChannel(requestedChannel, RequestChannel::CLIENT_SIDE, chan->buffersize);
+		}else if(Rtype == 'q'){ //message queue
+			customChannel =	new MQRequestChannel(requestedChannel, RequestChannel::CLIENT_SIDE, chan->buffersize);
+		}else if(Rtype == 's'){ //shared memory
+			customChannel =	new SHMRequestChannel(requestedChannel, RequestChannel::CLIENT_SIDE, chan->buffersize);
+		}
+
 		delete request;
 		delete size;
 		delete requestedChannel;
@@ -137,9 +145,9 @@ void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *reque
 
 	//setup for bonus
 	//start timer to send signals and display histogram
-	TimerClass timer(true);
-	timer.start();
-	cout << "timer armed" << endl;
+	// TimerClass timer(true);
+	// timer.start();
+	// cout << "timer armed" << endl;
 
 	//join all the patient threads
 	for(int i = 0; i < p; i++){
@@ -162,7 +170,7 @@ void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *reque
 
 }
 
-void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuffer *request_buffer){
+void fileReq(int w, int m, char *fileName, RequestChannel* chan, BoundedBuffer *request_buffer){
 
 
     //keep track of threads and argument lists
@@ -179,7 +187,15 @@ void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuff
 
 		int *size = new int();
 		char *requestedChannel = chan->cread(size);
-		FIFORequestChannel *customChannel = new FIFORequestChannel(requestedChannel, FIFORequestChannel::CLIENT_SIDE);
+		RequestChannel *customChannel;
+		if(Rtype == 'f'){ //fifo
+			customChannel =	new FIFORequestChannel(requestedChannel, RequestChannel::CLIENT_SIDE, chan->buffersize);
+		}else if(Rtype == 'q'){ //message queue
+			customChannel =	new MQRequestChannel(requestedChannel, RequestChannel::CLIENT_SIDE, chan->buffersize);
+		}else if(Rtype == 's'){ //shared memory
+			customChannel =	new SHMRequestChannel(requestedChannel, RequestChannel::CLIENT_SIDE, chan->buffersize);
+		}
+
 		delete request;
 		delete size;
 		delete requestedChannel;
@@ -221,13 +237,13 @@ void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuff
 
 
 //getInput - uses getopt to parse through flags and sets proper variables to the flag
-bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, int argc, char **argv)
+bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, char &i, int argc, char **argv)
 {
 	int c;
 	opterr = 0;
 
 	//get option retrieve user input
-	while ((c = getopt(argc, argv, "hn:p:w:b:m:f:")) != -1)
+	while ((c = getopt(argc, argv, "hn:p:w:b:m:f:i:")) != -1)
 	{
 		switch (c)
 		{
@@ -248,6 +264,9 @@ bool getInput(int &n, int &p, int &w, int &b, int &m, string &f, int argc, char 
 			break;            
 		case 'f': //file name
 			if (optarg)	f = optarg;
+			break;
+		case 'i': //request channel type
+			if (optarg)	i = optarg[0];
 			break;
         case 'h': //ask for help
 			cout << "HELP:\n";

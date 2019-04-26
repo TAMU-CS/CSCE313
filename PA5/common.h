@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <mqueue.h>
 
 using namespace std;
 

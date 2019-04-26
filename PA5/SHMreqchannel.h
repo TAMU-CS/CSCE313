@@ -1,11 +1,11 @@
 
-#ifndef _FIFOreqchannel_H_
-#define _FIFOreqchannel_H_
+#ifndef _SHMreqchannel_H_
+#define _SHMreqchannel_H_
 
 #include "common.h"
 #include "RequestChannel.h"
 
-class FIFORequestChannel : public RequestChannel
+class SHMRequestChannel : public RequestChannel
 {	
 private:
 	/*  The current implementation uses named pipes. */
@@ -17,9 +17,9 @@ private:
 
 	
 public:
-	FIFORequestChannel(const string _name, const Side _side, int _bs);
+	SHMRequestChannel(const string _name, const Side _side, int _bs);
 
-	~FIFORequestChannel();
+	~SHMRequestChannel();
 
 	char* cread(int *len=NULL);
 

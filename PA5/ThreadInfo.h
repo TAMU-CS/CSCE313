@@ -5,12 +5,16 @@
 #include "common.h"
 #include "HistogramCollection.h"
 #include "FIFOreqchannel.h"
+#include "MQreqchannel.h"
+#include "SHMreqchannel.h"
+#include "KernelSemaphore.h"
 using namespace std;
 
 //global variable to keep track of time
 int *totalFileLength;
 int *completedFileLength = new int(0);
 HistogramCollection *global_hc;
+char Rtype;
 
 class TimerClass {
     public:
@@ -124,7 +128,7 @@ class worker_thread_args{
 public:
 	//worker thread arguments
 	BoundedBuffer *B;
-	FIFORequestChannel *chan;
+	RequestChannel *chan;
 	HistogramCollection *H;
 };
 
@@ -161,7 +165,7 @@ void *worker_thread_function(void *arg)
 
 	//get arguments
 	worker_thread_args *ta = (worker_thread_args *) arg;
-	FIFORequestChannel *customChannel = ta->chan;
+	RequestChannel *customChannel = ta->chan;
 
 	datamsg *request = new datamsg(1, 0, 1);
 
@@ -185,6 +189,7 @@ void *worker_thread_function(void *arg)
 		if(request->mtype == QUIT_MSG){
 			//close channel
    	 		customChannel->cwrite ((char*)request, sizeof (datamsg));
+            delete ta->chan;
 			break;
 		}
 
@@ -209,7 +214,7 @@ void *worker_thread_function(void *arg)
 class file_threads_args{
 	public:
 	BoundedBuffer *B;
-	FIFORequestChannel *chan;
+	RequestChannel *chan;
 	char * fileName;
 	int m;
 };
@@ -217,53 +222,38 @@ class file_threads_args{
 class file_worker_args{
 	public:
 	BoundedBuffer *B;
-	FIFORequestChannel *chan;
+	RequestChannel *chan;
 	//output file
 	char *fileName;
 };
 
+
 void *file_threads_func(void *arg){
+    //thread arguments
+    file_threads_args *ta = (file_threads_args*) arg;
 
-	//get arguments
-	file_threads_args *ta = (file_threads_args*) arg;
-	int m = ta->m;
-	FIFORequestChannel *chan = ta->chan;
-	char *fileName = "mybin";
-	BoundedBuffer *B = ta->B;
+    //set up file msg to be pushed
+    char buf[sizeof(filemsg) + 5 + 1];
+    filemsg f(0, 0);
+    *(filemsg *) buf = f;
+    strcpy(buf + sizeof(filemsg), "mybin");
+    ta->chan->cwrite(buf, sizeof(buf));
 
-	//get file size
-	filemsg *fmsg = new filemsg(0, 0);
-	int requestSize = sizeof(filemsg) + sizeof(char) * 5 + 1;
+    //get file info
+    __int64_t fs = *(__int64_t *) ta->chan->cread();
     
-    char * request = new char[requestSize];
-    *((filemsg *) request) = *fmsg;
+    //convert ptr to be same as buf
+    filemsg *ptr = (filemsg*) buf;
+    __int64_t rem = fs;
 
-    strcpy(request + sizeof(filemsg), fileName);
-    chan->cwrite(request, requestSize);
-
-    int * resultLength = new int(0);
-    int size = *((int*)chan->cread(resultLength));
-    totalFileLength = &size;
-
-    //start timer
-    TimerClass timer(false);
-    timer.start();
-
-    //send a request for information (person, seconds, ecg number)
-    ((filemsg *) request)->length = m;
-    ((filemsg *) request)->offset = 0;
-
-    //loop and request
-    char *buffer;
-    for(int i = 0; i < size; i+= m){
-        ((filemsg *) request)->offset = i;
-
-        //write to bounded buffer
-		B->push(request, requestSize);
-
-        *completedFileLength = i;
+    //iterate and loop until no more remaining bytes
+    while(rem > 0){
+        int chunksize = (int) min(rem, (__int64_t)ta->m);
+        ptr->length = chunksize;
+        ta->B->push(buf, sizeof(buf));
+        ptr->offset += chunksize;
+        rem-= chunksize;
     }
-	B->push(request, requestSize);
 }
 
 void *file_worker_func(void *arg){
@@ -275,38 +265,27 @@ void *file_worker_func(void *arg){
 
 	//get arguments
 	file_worker_args *ta = (file_worker_args *) arg;
-	FIFORequestChannel *chan = ta->chan;
-	char *fileName = "mybin";//ta->fileName;
+    while(true){
+        vector<char> vreq= ta->B->pop();
+        char* request = vreq.data();
+        ta->chan->cwrite(request, vreq.size());
 
-	int *len = new int(100);
-	char *buffer = new char(100);
-	int requestSize = sizeof(filemsg) + sizeof(char) * 5 + 1;
-    int * resultLength = new int(0);
-    char * request = new char[requestSize];
+	 	if(*(MESSAGE_TYPE *)request == QUIT_MSG){
+	 		//close channel
+   	  		delete ta->chan;
+	 		break;
+	 	}
 
-    //file setup
-	FILE* y1output = fopen ("BinCpyOutput", "wb");
+        int len = 0;
+        char* response = ta->chan->cread(&len);
+        
+        filemsg* f = (filemsg*) request;
+        FILE* fp = fopen("BinCpyOutput", "r+");
 
-	//pop arguments from request buffer
-	while(true){
- 
-		//pop off request and process
-		vector<char> vReq = ta->B->pop();
-	
-		//person and seconds and get reqDMsg conversion
-		request = &vReq[0];
+        fseek(fp, f->offset, SEEK_SET);
+        fwrite(response, 1, len, fp);
+        fclose(fp);
+    }
 
-		//check if quit msg, then stop thread
-		if(((datamsg*)request)->mtype == QUIT_MSG){
-			//close channel
-   	 		chan->cwrite ((char*)request, sizeof (datamsg));
-			break;
-		}
 
-        chan->cwrite(request, requestSize);
-        buffer = chan->cread(resultLength);
-
-		fseek (y1output, ((filemsg *) request)->offset, SEEK_SET);
-		fwrite (buffer, 1, ((filemsg *) request)->length, y1output);
-	}
 }
