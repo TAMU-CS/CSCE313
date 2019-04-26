@@ -22,3 +22,10 @@ CSCE313.pem
 
 /PA4/*.vscode
 /PA4/.vscode/*
+/PA4/BIMDC/mybin
+/PA4/BinCpyOutput
+
+/PA5/*.vscode
+/PA5/.vscode/*
+/PA5/BIMDC/mybin
+/PA5/BinCpyOutput

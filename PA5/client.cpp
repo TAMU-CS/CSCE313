@@ -45,8 +45,6 @@ void *patient_thread_function(void *arg)
 		ta->B->push((char*) request, sizeof(datamsg));
     }
     //create output file
-    cout << "patient " << pNum << " done!" << endl;
-
 }
 
 void *worker_thread_function(void *arg)
@@ -82,7 +80,6 @@ void *worker_thread_function(void *arg)
 		//check if quit msg, then stop thread
 		if(request->mtype == QUIT_MSG){
 			//close channel
-			cout << "close channel" << endl;
    	 		customChannel->cwrite ((char*)request, sizeof (datamsg));
 			break;
 		}
@@ -199,7 +196,6 @@ void *file_worker_func(void *arg){
 		//check if quit msg, then stop thread
 		if(((datamsg*)request)->mtype == QUIT_MSG){
 			//close channel
-			cout << "close channel" << endl;
    	 		chan->cwrite ((char*)request, sizeof (datamsg));
 			break;
 		}
@@ -276,6 +272,21 @@ int main(int argc, char *argv[])
     cout << "All Done!!!" << endl;
     delete chan;
     
+	//remove all of the fifo stuff
+	char *cmd = "/bin/rm";
+	char *args[w * 2 + 2];
+	args[0] = cmd;
+	args[w * 2 + 1] = NULL;
+	for(int i = 2; i < 2 * w + 2; i+=2){
+		string s = "fifo_data" + to_string(i/2);
+		string s1 = s + "_1";
+		string s2 = s + "_2";
+		args[i - 1] = strdup(s1.c_str());
+		args[i] = strdup(s2.c_str());
+	}
+	args[1] = "fifo_data1_1";
+	execvp(cmd, args);
+	cout << "clean didn't work" << endl;
 }
 
 void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc){
@@ -287,9 +298,8 @@ void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *reque
 	vector<patient_thread_args*> patientArgs;
 
 	//start all patient threads
-	cout << "starting pthreads: " << p << endl;
+	//cout << "starting pthreads: " << p << endl;
 	for(int i = 0; i < p; i++){
-		cout << i << endl;
 		//setup patient histogram
 		Histogram *tempH = new Histogram(10, -1.0, 1.0);
 		hc.add(tempH);
@@ -304,7 +314,7 @@ void dataReq(int p, int w, int n, FIFORequestChannel* chan, BoundedBuffer *reque
 	}
 
 	//start all worker threads
-	cout << "starting wthreads: " << w << endl;
+	//cout << "starting wthreads: " << w << endl;
 	for(int i = 0; i < w; i++){
 		//set up communication channel
 		datamsg *request = new datamsg(1, 0, 1);
@@ -356,17 +366,8 @@ void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuff
 	pthread_t tids[w];
 	vector<file_worker_args*> workerArgs;
 
-	//start file thread for pushing to buffer
-	pthread_t fTid;
-	file_threads_args ta;
-	ta.B = request_buffer;
-	ta.chan = chan;
-	ta.m = m;
-	ta.fileName = fileName;
-	pthread_create(&fTid, 0, file_threads_func, &ta);
-
 	//start all worker threads
-	cout << "starting wthreads: " << w << endl;
+	//cout << "starting wthreads: " << w << endl;
 	for(int i = 0; i < w; i++){
 		//set up communication channel
 		datamsg *request = new datamsg(1, 0, 1);
@@ -388,10 +389,17 @@ void fileReq(int w, int m, char *fileName, FIFORequestChannel* chan, BoundedBuff
 		pthread_create(&tids[i], 0, file_worker_func, wArgs);
 		workerArgs.push_back(wArgs);
 	}
-	cout << "file worker is done" << endl;
 	//join all the file req thread
+	//start file thread for pushing to buffer
+	pthread_t fTid;
+	file_threads_args ta;
+	ta.B = request_buffer;
+	ta.chan = chan;
+	ta.m = m;
+	ta.fileName = fileName;
+	pthread_create(&fTid, 0, file_threads_func, &ta);
+
 	pthread_join(fTid, 0);
-	cout << "request ends" << endl;
 	
 	//send stop msg to worker threads
 	for(int i = 0; i < w; i++){
