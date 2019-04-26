@@ -10,57 +10,35 @@ SHMRequestChannel::SHMRequestChannel(const string _name, const Side _side, int _
 	RequestChannel(_name, _side, _bs)
 {
 	
-	pipe1 = "fifo_" + my_name + "1";
-	pipe2 = "fifo_" + my_name + "2";
-		
-	if (_side == SERVER_SIDE){
-		wfd = open_pipe(pipe1, O_WRONLY);
-		rfd = open_pipe(pipe2, O_RDONLY);
-	}
-	else{
-		rfd = open_pipe(pipe1, O_RDONLY);
-		wfd = open_pipe(pipe2, O_WRONLY);
-		
-	}
-	
+	string pipe1 = "shared_" + my_name + "1";
+	string pipe2 = "shared_" + my_name + "2";
+	servBuff = new SHMbb(pipe1);
+	clBuff = new SHMbb(pipe2);
+
 }
 
 SHMRequestChannel::~SHMRequestChannel()
-{ 
-	close(wfd);
-	close(rfd);
-
-	remove(pipe1.c_str());
-	remove(pipe2.c_str());
-}
-
-int SHMRequestChannel::open_pipe(string _pipe_name, int mode)
 {
-	mkfifo (_pipe_name.c_str (), 0600);
-	int fd = open(_pipe_name.c_str(), mode);
-	if (fd < 0){
-		EXITONERROR(_pipe_name);
-	}
-	return fd;
+	delete servBuff;
+	delete clBuff;
 }
 
 char* SHMRequestChannel::cread(int *len)
 {
-	char * buf = new char [MAX_MESSAGE];
-	int length; 
-	length = read(rfd, buf, MAX_MESSAGE);
-	if (len)	// the caller wants to know the length
-		*len = length;
-	return buf;
+	if(my_side == RequestChannel::SERVER_SIDE){
+		return (char*)servBuff->pop().c_str();
+	}else{
+		return (char*)clBuff->pop().c_str();
+	}
 }
 
 int SHMRequestChannel::cwrite(char* msg, int len)
 {
-	if (len > MAX_MESSAGE){
-		EXITONERROR("cwrite");
+	if(my_side == RequestChannel::SERVER_SIDE){
+		clBuff->push(msg);
+	}else{
+		servBuff->push(msg);
 	}
-	if (write(wfd, msg, len) < 0){
-		EXITONERROR("cwrite");
-	}
+
 	return len;
 }

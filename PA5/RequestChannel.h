@@ -2,6 +2,7 @@
 #define _RequestChannel_H_
 
 #include "common.h"
+#include "KernelSemaphore.h"
 using namespace std;
 
 //abstract class definition of request channel

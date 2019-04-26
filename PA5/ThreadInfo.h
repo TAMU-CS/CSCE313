@@ -7,7 +7,6 @@
 #include "FIFOreqchannel.h"
 #include "MQreqchannel.h"
 #include "SHMreqchannel.h"
-#include "KernelSemaphore.h"
 using namespace std;
 
 //global variable to keep track of time

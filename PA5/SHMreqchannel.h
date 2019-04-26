@@ -5,16 +5,34 @@
 #include "common.h"
 #include "RequestChannel.h"
 
+//helper class for the request channel
+class SHMbb {
+public:
+	KernelSemaphore* full, *empty;
+	char *data;
+	string name;
+	int id;
+
+	SHMbb(string n){
+
+	};
+	~SHMbb(){
+
+	};
+	void push(string msg){
+
+	}
+	string pop(){
+
+	}
+
+};
+
 class SHMRequestChannel : public RequestChannel
 {	
 private:
-	/*  The current implementation uses named pipes. */
-	int wfd;
-	int rfd;
-	
-	string pipe1, pipe2;
-	int open_pipe(string _pipe_name, int mode);
-
+	SHMbb *servBuff;
+	SHMbb *clBuff;
 	
 public:
 	SHMRequestChannel(const string _name, const Side _side, int _bs);

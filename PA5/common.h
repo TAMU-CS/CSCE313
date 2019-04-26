@@ -27,6 +27,11 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <mqueue.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/mman.h>
+#include <semaphore.h>
+#include <mutex>
 
 using namespace std;
 

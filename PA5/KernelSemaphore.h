@@ -8,15 +8,14 @@ class KernelSemaphore
 {
 private:
     int val;
+    int id;
 public:
     //constructor
-    KernelSemaphore(int _val){
-        val = _val;
+    KernelSemaphore(int _val, key_t k){
     };
 
     //destructor
     ~KernelSemaphore(){
-
     };
 
     // acquire lock

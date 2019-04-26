@@ -132,7 +132,7 @@ void dataReq(int p, int w, int n, RequestChannel* chan, BoundedBuffer *request_b
 
 		delete request;
 		delete size;
-		delete requestedChannel;
+		// delete requestedChannel;
 
 		//create the thread
 		worker_thread_args *wArgs = new worker_thread_args();
