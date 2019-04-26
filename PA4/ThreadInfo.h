@@ -255,24 +255,15 @@ void *file_threads_func(void *arg){
 
     //loop and request
     char *buffer;
-    for(int i = m; i < size; i+= m){
-        ((filemsg *) request)->offset = i - m;
+    for(int i = 0; i < size; i+= m){
+        ((filemsg *) request)->offset = i;
 
         //write to bounded buffer
 		B->push(request, requestSize);
 
         *completedFileLength = i;
     }
-
-	if(size % m != 0){
-
-		//set the request length to the ending
-		((filemsg *) request)->length = size % m;
-		((filemsg *) request)->offset = size  - (size % m);
-	
-        //write to bounded buffer
-		B->push(request, requestSize);
-	}
+	B->push(request, requestSize);
 }
 
 void *file_worker_func(void *arg){
