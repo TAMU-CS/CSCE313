@@ -282,7 +282,7 @@ void *file_worker_func(void *arg){
         filemsg* f = (filemsg*) request;
         fseek(BINFP, f->offset, SEEK_SET);
 
-        fwrite(response, 1, len, BINFP);
+        fwrite(response, 1, f->length, BINFP);
     }
 
 

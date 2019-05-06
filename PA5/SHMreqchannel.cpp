@@ -7,7 +7,7 @@ using namespace std;
 /*--------------------------------------------------------------------------*/
 
 SHMRequestChannel::SHMRequestChannel(const string _name, const Side _side, int _bs) :
-	RequestChannel(_name, _side, _bs )
+	RequestChannel(_name, _side, _bs)
 {
 	string pipe1 = "shared_" + my_name + "1";
 	string pipe2 = "shared_" + my_name + "2";
