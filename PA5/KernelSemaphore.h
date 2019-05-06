@@ -7,25 +7,33 @@
 class KernelSemaphore
 {
 private:
-    int val;
-    int id;
+    sem_t *semid;
+    string id;
 public:
     //constructor
-    KernelSemaphore(int _val, key_t k){
+    KernelSemaphore(string _id , int _val){
+        id = "/" + _id;
+
+        semid = sem_open(id.c_str(), O_CREAT, 0666, _val);    
+        if(semid == SEM_FAILED){
+            perror("KernelSemaphore");
+        }    
     };
 
     //destructor
     ~KernelSemaphore(){
+        sem_close(semid);
+        sem_unlink(id.c_str());
     };
 
     // acquire lock
     void P(){
-
+        sem_wait(semid);
     }; 
 
     // release lock
     void V(){
-
+        sem_post(semid);
     }; 
 };
 

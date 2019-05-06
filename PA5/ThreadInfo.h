@@ -255,6 +255,7 @@ void *file_threads_func(void *arg){
     }
 }
 
+FILE* BINFP = fopen("BinCpyOutput", "wb");
 void *file_worker_func(void *arg){
 	//worker thread performs four tasks:
 	//1. reads a datamsg from request buffer
@@ -279,11 +280,9 @@ void *file_worker_func(void *arg){
         char* response = ta->chan->cread(&len);
         
         filemsg* f = (filemsg*) request;
-        FILE* fp = fopen("BinCpyOutput", "r+");
+        fseek(BINFP, f->offset, SEEK_SET);
 
-        fseek(fp, f->offset, SEEK_SET);
-        fwrite(response, 1, len, fp);
-        fclose(fp);
+        fwrite(response, 1, len, BINFP);
     }
 
 

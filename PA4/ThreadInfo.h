@@ -278,7 +278,7 @@ void *file_worker_func(void *arg){
         char* response = ta->chan->cread(&len);
         
         filemsg* f = (filemsg*) request;
-        FILE* fp = fopen("BinCpyOutput", "r+");
+        FILE* fp = fopen("BinCpyOutput", "w");
 
         fseek(fp, f->offset, SEEK_SET);
         fwrite(response, 1, len, fp);

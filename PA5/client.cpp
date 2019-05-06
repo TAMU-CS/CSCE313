@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     int p = 10;     // number of patients [1,15]
     int w = 100;    //default number of worker threads
     int b = 20; 	// default capacity of the request buffer, you should change this default
-	int m = MAX_MESSAGE; 	// default capacity of the file buffer
+	int m = 50; 	// default capacity of the file buffer
     string f;   //file string
 	Rtype = 'f'; //request channel type , default to fifo
     srand(time_t(NULL));
@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
     
 	//cleanup
 	//not necessary, when channels are deleted they clean themselves
+	fclose(BINFP);
 }
 
 void dataReq(int p, int w, int n, RequestChannel* chan, BoundedBuffer *request_buffer, HistogramCollection &hc){
